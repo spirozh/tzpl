@@ -186,6 +186,7 @@ private:
 
     // Token scanning
     Token scanNumber();
+    bool scanDigitRun(bool hex);
     Token scanString();
     Token scanTripleQuotedString(SourceLoc start);
     Token scanGuillemetsString(SourceLoc start);
@@ -205,6 +206,11 @@ private:
 
 // Human-readable name for a token kind (e.g. "';'", "'fn'", "identifier", "end of file")
 const char* tokenKindString(TokenKind kind);
+
+// Drop '_' digit separators from a numeric literal's text. They are lexical
+// only, so anything that converts the text to a value (std::stoll,
+// parseFloatC, a tuple index) must strip them first.
+std::string stripUnderscores(std::string const& text);
 
 } // namespace ts
 

@@ -56,6 +56,18 @@ static uint32_t hexVal(char c) {
     return 10 + c - 'A';
 }
 
+// Digit separators ('_') are lexically part of a numeric literal but are not
+// part of its value, so std::stoll/parseFloatC see the text without them.
+std::string stripUnderscores(std::string const& s) {
+    if (s.find('_') == std::string::npos) return s;
+    std::string out;
+    out.reserve(s.size());
+    for (char const c : s) {
+        if (c != '_') out += c;
+    }
+    return out;
+}
+
 Lexer::Lexer(const std::string& source, const std::string& filename)
     : source_(source)
     , filename_(filename)
@@ -210,6 +222,30 @@ TokenKind Lexer::keywordKind(const std::string& text) const {
     return TokenKind::Identifier;
 }
 
+// Consume a run of digits with optional '_' separators, e.g. 1_000_000 or
+// 0xFF_FF. A separator is legal only directly between two digits; when one is
+// misplaced this leaves the position on the '_' and returns false so the
+// caller can point the diagnostic at it.
+bool Lexer::scanDigitRun(bool hex) {
+    bool prevWasDigit = false;
+    while (!atEnd()) {
+        char const c = current();
+        if (hex ? isHexDigit(c) : isDigit(c)) {
+            prevWasDigit = true;
+            advance();
+        } else if (c == '_') {
+            if (!prevWasDigit || !(hex ? isHexDigit(peekChar()) : isDigit(peekChar()))) {
+                return false;
+            }
+            prevWasDigit = false;
+            advance();
+        } else {
+            break;
+        }
+    }
+    return true;
+}
+
 Token Lexer::scanNumber() {
     SourceLoc start = currentLoc();
     u32 startPos = pos_;
@@ -222,18 +258,18 @@ Token Lexer::scanNumber() {
         if (atEnd() || !isHexDigit(current())) {
             return errorToken("Expected hex digits after 0x");
         }
-        while (!atEnd() && isHexDigit(current())) {
-            advance();
+        if (!scanDigitRun(true)) {
+            return errorToken("Misplaced '_' in hex literal; underscores may only separate digits");
         }
         std::string text = source_.substr(startPos, pos_ - startPos);
         Token tok = makeToken(TokenKind::IntLiteral, start, text);
-        tok.intValue = std::stoll(text, nullptr, 16);
+        tok.intValue = std::stoll(stripUnderscores(text), nullptr, 16);
         return tok;
     }
 
     // Integer part
-    while (!atEnd() && isDigit(current())) {
-        advance();
+    if (!scanDigitRun(false)) {
+        return errorToken("Misplaced '_' in numeric literal; underscores may only separate digits");
     }
 
     // Check for decimal point (requires leading digit, e.g. 1.5 not .5)
@@ -241,8 +277,8 @@ Token Lexer::scanNumber() {
         isFloat = true;
         advance();
         // Fractional part
-        while (!atEnd() && isDigit(current())) {
-            advance();
+        if (!scanDigitRun(false)) {
+            return errorToken("Misplaced '_' in numeric literal; underscores may only separate digits");
         }
     }
 
@@ -253,18 +289,20 @@ Token Lexer::scanNumber() {
         if (current() == '+' || current() == '-') {
             advance();
         }
-        while (!atEnd() && isDigit(current())) {
-            advance();
+        if (!scanDigitRun(false)) {
+            return errorToken("Misplaced '_' in numeric literal; underscores may only separate digits");
         }
     }
 
     // Fraction literal: integer immediately followed by / and digits (no whitespace)
     if (!isFloat && current() == '/' && isDigit(peekChar())) {
-        i64 numerator = std::stoll(source_.substr(startPos, pos_ - startPos));
+        i64 numerator = std::stoll(stripUnderscores(source_.substr(startPos, pos_ - startPos)));
         advance(); // consume '/'
         u32 denomStart = pos_;
-        while (!atEnd() && isDigit(current())) advance();
-        i64 denom = std::stoll(source_.substr(denomStart, pos_ - denomStart));
+        if (!scanDigitRun(false)) {
+            return errorToken("Misplaced '_' in fraction literal; underscores may only separate digits");
+        }
+        i64 denom = std::stoll(stripUnderscores(source_.substr(denomStart, pos_ - denomStart)));
         std::string text = source_.substr(startPos, pos_ - startPos);
         // Disallow '/' immediately after a fraction literal to prevent
         // ambiguous expressions like 1/2/3/4.
@@ -292,7 +330,7 @@ Token Lexer::scanNumber() {
     // saturates to +-inf, which is what strtod returns natively.
     if (isImaginary) {
         // Strip trailing 'i' for numeric parsing
-        std::string numText = text.substr(0, text.size() - 1);
+        std::string numText = stripUnderscores(text.substr(0, text.size() - 1));
         Token tok = makeToken(TokenKind::ImaginaryLiteral, start, text);
         tok.floatValue = parseFloatC(numText.c_str(), nullptr);
         return tok;
@@ -301,9 +339,9 @@ Token Lexer::scanNumber() {
     Token tok = makeToken(isFloat ? TokenKind::FloatLiteral : TokenKind::IntLiteral, start, text);
 
     if (isFloat) {
-        tok.floatValue = parseFloatC(text.c_str(), nullptr);
+        tok.floatValue = parseFloatC(stripUnderscores(text).c_str(), nullptr);
     } else {
-        tok.intValue = std::stoll(text);
+        tok.intValue = std::stoll(stripUnderscores(text));
     }
 
     return tok;

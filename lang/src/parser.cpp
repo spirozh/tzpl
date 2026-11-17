@@ -2166,7 +2166,14 @@ ExprPtr Parser::parsePrimary() {
             return std::make_unique<CallExpr_>(loc, std::move(callee), std::move(args));
         }
         default: {
-            error("Expected expression, got '" + current_.text + "'");
+            // A lexer error already carries a precise message and location.
+            // Wrapping it as "Expected expression, got '<message>'" buries it
+            // in nested quotes, so report it verbatim.
+            if (current_.kind == TokenKind::Error) {
+                error(current_.text);
+            } else {
+                error("Expected expression, got '" + current_.text + "'");
+            }
             Token tok = advance();
             return std::make_unique<IntLiteralExpr>(tok.loc, 0);  // Error recovery
         }
@@ -2204,11 +2211,12 @@ ExprPtr Parser::parseTightPostfix(ExprPtr left) {
             Token field;
             if (check(TokenKind::IntLiteral)) {
                 field = advance();
+                field.text = stripUnderscores(field.text);  // t.1_0 is element 10
             } else if (check(TokenKind::FloatLiteral)) {
                 Token floatTok = advance();
                 auto dotPos = floatTok.text.find('.');
-                std::string first = floatTok.text.substr(0, dotPos);
-                std::string second = floatTok.text.substr(dotPos + 1);
+                std::string first = stripUnderscores(floatTok.text.substr(0, dotPos));
+                std::string second = stripUnderscores(floatTok.text.substr(dotPos + 1));
                 SourceRange loc = left->loc;
                 left = std::make_unique<FieldExpr_>(loc, std::move(left), first);
                 left = std::make_unique<FieldExpr_>(loc, std::move(left), second);
@@ -2267,13 +2275,14 @@ ExprPtr Parser::parsePostfix(ExprPtr left) {
             Token field;
             if (check(TokenKind::IntLiteral)) {
                 field = advance();
+                field.text = stripUnderscores(field.text);  // t.1_0 is element 10
             } else if (check(TokenKind::FloatLiteral)) {
                 // Handle chained tuple access: expr.1.0 is lexed as Dot + FloatLiteral("1.0")
                 // Split into two field accesses: .1 then .0
                 Token floatTok = advance();
                 auto dotPos = floatTok.text.find('.');
-                std::string first = floatTok.text.substr(0, dotPos);
-                std::string second = floatTok.text.substr(dotPos + 1);
+                std::string first = stripUnderscores(floatTok.text.substr(0, dotPos));
+                std::string second = stripUnderscores(floatTok.text.substr(dotPos + 1));
                 SourceRange loc = left->loc;
                 left = std::make_unique<FieldExpr_>(loc, std::move(left), first);
                 left = std::make_unique<FieldExpr_>(loc, std::move(left), second);

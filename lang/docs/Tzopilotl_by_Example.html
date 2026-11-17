@@ -584,7 +584,7 @@ if (localStorage.getItem('tzpl-docs-theme') === 'light') document.documentElemen
    /* and can be nested */ */</span></code></pre>
 
 <h3 id="literals">1.2 Literals</h3>
-<pre><code><span class="cmt">-- Integer literals</span>
+<pre><code><span class="cmt">-- Integer literals ('_' may separate digits in any numeric literal)</span>
 <span class="num">42</span>
 <span class="num">0</span>
 <span class="num">123_456_789</span>
@@ -593,11 +593,14 @@ if (localStorage.getItem('tzpl-docs-theme') === 'light') document.documentElemen
 <span class="num">0xFF</span>
 <span class="num">0x100</span>
 <span class="num">0xDeadBeef</span>
+<span class="num">0xFF_FF</span>
 
 <span class="cmt">-- Float literals (require a digit on both sides of the decimal point)</span>
 <span class="num">3.14</span>
 <span class="num">0.5</span>
 <span class="num">2.0</span>
+<span class="num">1_000.000_5</span>
+<span class="num">1.5e1_0</span>
 
 <span class="cmt">-- Fraction literals (integer/integer with no spaces around /)</span>
 <span class="num">1/2</span>

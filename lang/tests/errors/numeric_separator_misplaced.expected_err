@@ -1,0 +1,77 @@
+Parse error [tests/errors/numeric_separator_misplaced.x:4:10]
+  |
+4 | println(1_);              -- trailing
+  |          ^
+  Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:5:10]
+  |
+5 | println(1__0);            -- doubled
+  |          ^
+  Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:6:14]
+  |
+6 | println(1.000_);          -- trailing after the fraction
+  |              ^
+  Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:7:14]
+  |
+7 | println(1.000_e5);        -- before the exponent marker
+  |              ^
+  Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:8:11]
+  |
+8 | println(1e_5);            -- directly after the exponent marker
+  |           ^
+  Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:9:12]
+  |
+9 | println(1e5_);            -- trailing after the exponent digits
+  |            ^
+  Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:10:12]
+   |
+10 | println(1e+_5);           -- directly after the exponent sign
+   |            ^
+   Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:11:10]
+   |
+11 | println(1_i);             -- before the imaginary suffix
+   |          ^
+   Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:12:10]
+   |
+12 | println(3_/2_000);        -- trailing in the numerator
+   |          ^
+   Misplaced '_' in numeric literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:13:16]
+   |
+13 | println(3_000/2__000);    -- doubled in the denominator
+   |                ^
+   Misplaced '_' in fraction literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:14:11]
+   |
+14 | println(0x_FF);           -- directly after the radix prefix
+   |           ^
+   Expected hex digits after 0x
+
+Parse error [tests/errors/numeric_separator_misplaced.x:15:12]
+   |
+15 | println(0x1_);            -- trailing in a hex literal
+   |            ^
+   Misplaced '_' in hex literal; underscores may only separate digits
+
+Parse error [tests/errors/numeric_separator_misplaced.x:16:12]
+   |
+16 | println(0x1__F);          -- doubled in a hex literal
+   |            ^
+   Misplaced '_' in hex literal; underscores may only separate digits

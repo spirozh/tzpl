@@ -7,6 +7,15 @@ documentation site as the Changelog page.
 
 ## Unreleased
 
+### Added
+
+- Numeric literals accept `_` as a digit separator, as the language docs and
+  the tree-sitter grammar always claimed: `1_000`, `123_456_789`, `0xFF_FF`,
+  `1_000.000_5`, `1e1_0`, `3_000/2_000`, `1_0i`, and tuple indexes such as
+  `t.1_0` (element 10). A separator must sit directly between two digits, so
+  `1_`, `1__0` and `0x_FF` are lexer errors; it is stripped before the value
+  is parsed, so a separated literal is the same value as the unseparated one.
+
 ### Changed
 
 - `ksPluck` (instruments.x) plays about 10 dB louder, as loud as `wtLead`

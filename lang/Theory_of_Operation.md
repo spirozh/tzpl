@@ -35,6 +35,7 @@ Key characteristics:
 - **Save/restore** state support for tentative parsing (used by the parser for disambiguating `<` as less-than vs. template argument list).
 - Lexes **symbol literals** (`'foo`), **imaginary literals** (`4i`, `3.14i`), **fraction literals** (`1/2`, `3/4` — no whitespace around `/`), **triple-quoted strings** (`"""..."""`), and **guillemet strings** (`«...»`).
 - Lexes **dynamic variable references** (`` `varName ``) as `DynamicVar` tokens.
+- Accepts `_` as a **digit separator** in any numeric literal (`1_000`, `0xFF_FF`, `1_000.5`, `1e1_0`, `3_000/2_000`). A separator is legal only directly between two digits, so `1_`, `1__0` and `0x_FF` are lexer errors. Separators are lexical only -- stripped before the value is parsed -- and a tuple index written with them (`t.1_0`) means element 10.
 - Handles `--` line comments and `/* */` block comments (nestable).
 - Splits compound tokens when needed: `>>` can be split into two `>` tokens for closing nested template argument lists, and `>=` can be split into `>` + `=`.
 
