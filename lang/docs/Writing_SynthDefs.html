@@ -1811,7 +1811,7 @@ spectralLowpass defSynth(<span class="hl-str">"spectralLowpass"</span>) <span cl
 
             <table>
                 <tr><th>Function</th><th>Description</th></tr>
-                <tr><td><code>play(defName)</code> / <code>play(defName, nodeID)</code></td><td>Create a node of the def, connect its output to audio out, return the node ID.</td></tr>
+                <tr><td><code>play(defName)</code> / <code>play(defName, nodeID)</code></td><td>Create a node of the def, connect its output to audio out, return the node ID. Node ids 0 and 1 are the engine's output and input nodes, so an explicit id must be 2 or greater (the no-id form allocates from 1000 up); a rejected id prints a diagnostic and plays nothing.</td></tr>
                 <tr><td><code>stop(nodeID)</code></td><td>Free the node.</td></tr>
                 <tr><td><code>playFor(defName, seconds)</code></td><td>Coroutine: play, yield for <code>seconds</code>, stop. Useful in scheduled/scripted contexts.</td></tr>
             </table>
@@ -2214,6 +2214,12 @@ fillBuffer(<span class="hl-num">100</span>, <span class="hl-num">0</span>, <span
                 <tr><td><code>rq</code></td><td>Reciprocal of Q (1/Q) &mdash; smaller = more resonant; <code>&radic;0.5 &asymp; 0.707</code> is the flat (Butterworth) response</td></tr>
                 <tr><td><code>db</code></td><td>Gain in dB (shelving and parametric EQ)</td></tr>
             </table>
+
+            <p>For the bandwidth designs (<code>bpf</code>/<code>brf</code>/<code>peakEQ</code>) a
+            center frequency outside 10&nbsp;Hz&ndash;0.45&nbsp;&times;&nbsp;<code>fs()</code> is clamped
+            into that range: their alpha divides by <code>sin(w0)</code>, which is 0 at 0&nbsp;Hz and
+            at Nyquist. A center frequency that starts at 0 or sweeps through it is therefore
+            silent, not broken, and works again as soon as it comes back into range.</p>
 
             <p>All parameters are modulatable signals; the coefficient math runs at the rate of its
             inputs, so filters driven by controls recompute coefficients only when a control

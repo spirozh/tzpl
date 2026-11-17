@@ -1566,7 +1566,13 @@ fn play(defName String, nodeID Int) Int {
 	ae.begin();
 	ae.newNode(defName, nodeID);
 	ae.connect(nodeID, 0, 0, 0);
-	ae.sched(0);
+	let startErr = ae.sched(0);
+	if (startErr != 0) {
+		-- Nothing will play, so say why: ids 0 and 1 are the engine's input
+		-- and output nodes, and a live id cannot be reused. Silently
+		-- returning the id here looks like a working, silent synth.
+		"play: \"%^\" could not start on node %^ (engine error %^); node ids 0 and 1 are the engine's input and output nodes" fmt(defName, nodeID, startErr toString) println;
+	}
 	nodeID
 }
 
