@@ -18,15 +18,42 @@ let kLog001 = 0.001 log;
 -- Internal helpers
 -- ============================================================
 
--- angular frequency: w0 = 2*pi*fc/fs
-fn _w0(fc AsSignal) S = twopi * fc * T();
+-- angular frequency: w0 = 2*pi*fc/fs, kept inside the band where the RBJ
+-- designs are defined: 1 Hz .. 0.45 fs. Past Nyquist sin(w0) turns negative,
+-- which flips alpha's sign and puts the poles outside the unit circle (the
+-- filters grow); at 0 Hz the bandwidth designs divide by sin(w0) and every
+-- design lands on a double pole at z = 1. The floor is as low as the f32
+-- coefficient math stays well conditioned, not at audibility: filters at a few
+-- Hz are useful as control smoothers and slow band extractors. (A very small
+-- rq near the floor is marginal in f32 at any frequency; that is the
+-- lossless-resonator knife edge, not the clamp.)
+fn _w0(fc AsSignal) S = twopi * min(max(fc, 1.0), 0.45 * fs()) * T();
 
--- alpha from rq (= 1/Q): alpha = sin(w0) / (2*Q) = sin(w0) * rq / 2
-fn _alphaRQ(sw0, rq) = sw0 * rq * 0.5;
+-- alpha from rq (= 1/Q): alpha = sin(w0) / (2*Q) = sin(w0) * rq / 2.
+-- A negative rq (a modulation that swings through zero) makes a2 > 1 and sets
+-- the filter growing; 0 is a lossless resonator.
+fn _alphaRQ(sw0, rq) = sw0 * (rq max(0.0)) * 0.5;
 
 -- alpha from bandwidth in octaves:
 -- alpha = sin(w0) * sinh(ln(2)/2 * bw * w0 / sin(w0))
-fn _alphaBW(w0, sw0, bw) = sw0 * (kLog2o2 * bw * w0 / sw0) sinh;
+-- bw is clamped to >= 0 (a negative bw flips alpha's sign, the same instability
+-- as a negative rq) and the sinh argument to +-14: that keeps sinh under 6e5, so
+-- (1 - alpha)/(1 + alpha) stays strictly inside the unit circle in f32, where a
+-- huge bw would otherwise overflow to inf and make every coefficient NaN. The
+-- quotient's denominator is floored: its 0/0 at 0 Hz used to be NaN, which
+-- poisons the biquad's state for good.
+fn _alphaBW(w0, sw0, bw) {
+    -- the clamp is on the whole sinh argument (a postfix min/max would bind to
+    -- the last factor only); +-14 keeps sinh under 6e5, where (1 - alpha) /
+    -- (1 + alpha) is still strictly inside the unit circle in f32
+    let x = kLog2o2 * (bw max(0.0)) * (w0 / max(sw0, 1e-20));
+    sw0 * (min(max(x, -14.0), 14.0)) sinh
+}
+
+-- 10^(dB/40), the shelving and peaking gain. Clamped to +-120 dB: past that the
+-- f32 products in the coefficient formulas overflow to inf, and inf/inf makes
+-- every coefficient NaN.
+fn _dbA(db AsSignal) S = ((db min(120.0) max(-120.0)) * 0.025) exp10;
 
 -- normalize all coefficients by a0
 fn _normCoeffs(b0, b1, b2, a0, a1, a2) BiquadCoeffs {
@@ -89,7 +116,7 @@ fn apfCoeffs(fc AsSignal, rq AsSignal) BiquadCoeffs {
 
 -- low shelf filter coefficients
 fn lowShelfCoeffs(fc AsSignal, db AsSignal, rq AsSignal) BiquadCoeffs {
-    let A = (db * 0.025) exp10;  -- 10^(dBgain/40)
+    let A = db _dbA;  -- 10^(dBgain/40), clamped
     let w0 S = fc _w0;
     let sw0 S = w0 sin;
     let cw0 S = w0 cos;
@@ -109,7 +136,7 @@ fn lowShelfCoeffs(fc AsSignal, db AsSignal, rq AsSignal) BiquadCoeffs {
 
 -- high shelf filter coefficients
 fn highShelfCoeffs(fc AsSignal, db AsSignal, rq AsSignal) BiquadCoeffs {
-    let A = (db * 0.025) exp10;  -- 10^(dBgain/40)
+    let A = db _dbA;  -- 10^(dBgain/40), clamped
     let w0 S = fc _w0;
     let sw0 S = w0 sin;
     let cw0 S = w0 cos;
@@ -129,7 +156,7 @@ fn highShelfCoeffs(fc AsSignal, db AsSignal, rq AsSignal) BiquadCoeffs {
 
 -- parametric EQ (peaking) filter coefficients
 fn peakEQCoeffs(fc AsSignal, db AsSignal, bw AsSignal) BiquadCoeffs {
-    let A = (db * 0.025) exp10;  -- 10^(dBgain/40)
+    let A = db _dbA;  -- 10^(dBgain/40), clamped
     let w0 S = fc _w0;
     let sw0 S = w0 sin;
     let cw0 S = w0 cos;
@@ -203,7 +230,7 @@ fn crossover(in S, freq AsSignal) (S, S) = (in lpf2(freq), in hpf2(freq));
 
 -- ringing filter
 fn ring(x S, freq AsSignal, ringTime AsSignal) S {
-	let R = decay60dB(ringTime * fs());  -- exp(ln(0.001) / (ringTime fs))
+	let R = decay60dB((ringTime max(1e-6)) * fs());  -- exp(ln(0.001) / (ringTime fs)); >= 0 keeps R <= 1
 	let cs = freq hzw cos;
 	let a1 = 2 * R * cs;
 	let a2 = -(R sq);

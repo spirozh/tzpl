@@ -2219,6 +2219,22 @@ fillBuffer(<span class="hl-num">100</span>, <span class="hl-num">0</span>, <span
             inputs, so filters driven by controls recompute coefficients only when a control
             changes (and every sample while one ramps or is patched to a moving signal).</p>
 
+            <p>Parameters are clamped to the range where the cookbook design is defined:
+            <code>fc</code> to 1&nbsp;Hz&ndash;0.45&nbsp;&times;&nbsp;<code>fs()</code>,
+            <code>rq</code> and <code>bw</code> to &ge;&nbsp;0, <code>db</code> to
+            &plusmn;120&nbsp;dB, and <code>ring</code>'s time to &ge;&nbsp;0. Outside it the
+            coefficients are not representable in 32-bit floats &mdash; a 0&nbsp;Hz center divides
+            by <code>sin(w0)</code>, a negative <code>rq</code> or <code>bw</code> puts the poles
+            outside the unit circle, an extreme <code>db</code> overflows &mdash; and a single NaN
+            coefficient would poison the filter's state for good, leaving it silent even after the
+            parameter returned to range. The ends that are musically meaningful stay available: a
+            lossless resonator (<code>rq</code> or <code>bw</code> = 0) still rings, and a center
+            frequency of 0&nbsp;Hz sits at the floor, which is sub-audio: for a bandpass that is
+            effectively silence, and it sounds again as soon as the center moves. The floor is
+            low on purpose &mdash; a filter at a few Hz is a useful control smoother or slow band
+            extractor; <code>lag</code>/<code>leaky</code> remain the direct way to smooth a
+            signal in the time domain.</p>
+
             <h3>Filter unit generators (12 dB/8ve)</h3>
             <table>
                 <tr><th>Function</th><th>Description</th></tr>
