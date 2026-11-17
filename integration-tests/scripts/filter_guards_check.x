@@ -113,6 +113,19 @@ if (*fails == 0) {
 		renderOne(c.0, "/tmp/tzpl_" $ c.0 $ ".wav");
 	}
 	println("FILTER GUARDS ALL RENDERED");
+
+-- The limits are a switch, on by default: with them off the cookbook formulas
+-- are emitted verbatim (no clamp nodes), so a patch can opt out.
+fn switchProbe() S = (pink(2) * 0.15) lowShelf(800.0, scalar(6.0), 0.7) outlet;
+filterLimits(true);
+let cppOn = compileToCpp(makeGraph(switchProbe), "SwOn");
+filterLimits(false);
+let cppOff = compileToCpp(makeGraph(switchProbe), "SwOff");
+filterLimits(true);
+if (cppOn != cppOff) { println("PASS filterLimits switch changes the graph"); }
+else { println("FAIL filterLimits switch changes the graph"); }
+if (cppOff length < cppOn length) { println("PASS filterLimits off emits the raw formula"); }
+else { println("FAIL filterLimits off emits the raw formula"); }
 } else {
 	println("FILTER GUARDS COMPILE FAILED: " $ *fails toString);
 }

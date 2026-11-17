@@ -2219,6 +2219,13 @@ fillBuffer(<span class="hl-num">100</span>, <span class="hl-num">0</span>, <span
             inputs, so filters driven by controls recompute coefficients only when a control
             changes (and every sample while one ramps or is patched to a moving signal).</p>
 
+            <p>Those ranges are enforced, but they are a switch rather than a law:
+            <code>filterLimits(false)</code> (call it before <code>defSynth</code>, like the
+            engine's <code>safetyLimiter</code>) emits the cookbook formulas verbatim for patches
+            that want to opt out &mdash; a growing filter driven into a nonlinearity, a center
+            above Nyquist, an undamped sub-1-Hz band. The limits are on by default because a
+            single NaN coefficient would otherwise poison a filter's state for good.</p>
+
             <p>Parameters are clamped to the range where the cookbook design is defined:
             <code>fc</code> to 1&nbsp;Hz&ndash;0.45&nbsp;&times;&nbsp;<code>fs()</code>,
             <code>rq</code> and <code>bw</code> to &ge;&nbsp;0, <code>db</code> to

@@ -18,21 +18,34 @@ let kLog001 = 0.001 log;
 -- Internal helpers
 -- ============================================================
 
+-- Parameter limits, on by default. fc is kept inside 1 Hz .. 0.45 fs, rq and
+-- bw at >= 0, db inside +-120 dB and ring's time at >= 0. They are limits on
+-- the *design*, not on the math: outside them a cookbook filter is undefined
+-- (past Nyquist the poles leave the unit circle; a negative rq or bw is
+-- negative damping; an extreme db overflows f32). A patch that wants the
+-- formulas verbatim -- a growing filter to drive a nonlinearity, a center
+-- above Nyquist, a sub-1-Hz band -- turns them off, the way the engine's
+-- safetyLimiter can be turned off. Call it before defSynth: the coefficient
+-- functions read it while the graph is built.
+var `filterLimits = true;
+fn filterLimits(on Bool) Void { `filterLimits = on; }
+
 -- angular frequency: w0 = 2*pi*fc/fs, kept inside the band where the RBJ
--- designs are defined: 1 Hz .. 0.45 fs. Past Nyquist sin(w0) turns negative,
--- which flips alpha's sign and puts the poles outside the unit circle (the
--- filters grow); at 0 Hz the bandwidth designs divide by sin(w0) and every
--- design lands on a double pole at z = 1. The floor is as low as the f32
--- coefficient math stays well conditioned, not at audibility: filters at a few
--- Hz are useful as control smoothers and slow band extractors. (A very small
--- rq near the floor is marginal in f32 at any frequency; that is the
--- lossless-resonator knife edge, not the clamp.)
-fn _w0(fc AsSignal) S = twopi * min(max(fc, 1.0), 0.45 * fs()) * T();
+-- designs are defined when the limits are on: 1 Hz .. 0.45 fs. Past Nyquist
+-- sin(w0) turns negative, which flips alpha's sign and puts the poles outside
+-- the unit circle (the filters grow); at 0 Hz the bandwidth designs divide by
+-- sin(w0) and every design lands on a double pole at z = 1. The floor is as
+-- low as the f32 coefficient math stays well conditioned, not at audibility:
+-- filters at a few Hz are useful as control smoothers and slow band
+-- extractors. (A very small rq near the floor is marginal in f32 at any
+-- frequency; that is the lossless-resonator knife edge, not the limit.)
+fn _w0(fc AsSignal) S =
+    `filterLimits ? twopi * min(max(fc, 1.0), 0.45 * fs()) * T() : twopi * fc * T();
 
 -- alpha from rq (= 1/Q): alpha = sin(w0) / (2*Q) = sin(w0) * rq / 2.
 -- A negative rq (a modulation that swings through zero) makes a2 > 1 and sets
 -- the filter growing; 0 is a lossless resonator.
-fn _alphaRQ(sw0, rq) = sw0 * (rq max(0.0)) * 0.5;
+fn _alphaRQ(sw0, rq) = sw0 * (`filterLimits ? (rq max(0.0)) : rq) * 0.5;
 
 -- alpha from bandwidth in octaves:
 -- alpha = sin(w0) * sinh(ln(2)/2 * bw * w0 / sin(w0))
@@ -43,17 +56,19 @@ fn _alphaRQ(sw0, rq) = sw0 * (rq max(0.0)) * 0.5;
 -- quotient's denominator is floored: its 0/0 at 0 Hz used to be NaN, which
 -- poisons the biquad's state for good.
 fn _alphaBW(w0, sw0, bw) {
-    -- the clamp is on the whole sinh argument (a postfix min/max would bind to
-    -- the last factor only); +-14 keeps sinh under 6e5, where (1 - alpha) /
-    -- (1 + alpha) is still strictly inside the unit circle in f32
-    let x = kLog2o2 * (bw max(0.0)) * (w0 / max(sw0, 1e-20));
-    sw0 * (min(max(x, -14.0), 14.0)) sinh
+    -- The quotient's denominator floor and the +-88 bound stay on in both
+    -- modes: they are what keeps the math finite (0/0 at 0 Hz, the overflow of
+    -- sinh). The +-14 bound is the limit: it keeps sinh under 6e5, where
+    -- (1 - alpha)/(1 + alpha) is still strictly inside the unit circle in f32.
+    let amax = `filterLimits ? 14.0 : 88.0;
+    let x = kLog2o2 * (`filterLimits ? (bw max(0.0)) : bw) * (w0 / max(sw0, 1e-20));
+    sw0 * (min(max(x, -amax), amax)) sinh
 }
 
 -- 10^(dB/40), the shelving and peaking gain. Clamped to +-120 dB: past that the
 -- f32 products in the coefficient formulas overflow to inf, and inf/inf makes
 -- every coefficient NaN.
-fn _dbA(db AsSignal) S = ((db min(120.0) max(-120.0)) * 0.025) exp10;
+fn _dbA(db AsSignal) S = ((`filterLimits ? (db min(120.0) max(-120.0)) : db) * 0.025) exp10;
 
 -- normalize all coefficients by a0
 fn _normCoeffs(b0, b1, b2, a0, a1, a2) BiquadCoeffs {
@@ -230,7 +245,7 @@ fn crossover(in S, freq AsSignal) (S, S) = (in lpf2(freq), in hpf2(freq));
 
 -- ringing filter
 fn ring(x S, freq AsSignal, ringTime AsSignal) S {
-	let R = decay60dB((ringTime max(1e-6)) * fs());  -- exp(ln(0.001) / (ringTime fs)); >= 0 keeps R <= 1
+	let R = decay60dB((`filterLimits ? (ringTime max(1e-6)) : ringTime) * fs());  -- exp(ln(0.001) / (ringTime fs)); >= 0 keeps R <= 1
 	let cs = freq hzw cos;
 	let a1 = 2 * R * cs;
 	let a2 = -(R sq);

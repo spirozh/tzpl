@@ -34,6 +34,8 @@ OUT="$("$APP" --nogui --no-audio "${MODS[@]}" "$SCRIPTS/filter_guards_check.x" 2
        | grep -E '^(PASS|FAIL|RENDERED|FILTER)')"
 echo "$OUT"
 echo "$OUT" | grep -q "FILTER GUARDS ALL RENDERED" || { echo "FAIL: filter guard render"; exit 1; }
+echo "$OUT" | grep -q "PASS filterLimits switch changes the graph" || { echo "FAIL: filterLimits switch"; exit 1; }
+echo "$OUT" | grep -q "PASS filterLimits off emits the raw formula" || { echo "FAIL: filterLimits raw formula"; exit 1; }
 
 "$PY" "$SCRIPTS/filter_guards_check.py" /tmp/tzpl_fg_*.wav \
     || { echo "FAIL: filter guard regression"; exit 1; }
