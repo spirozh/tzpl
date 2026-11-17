@@ -785,16 +785,16 @@ fn xline(lo, hi, dur) S = lo * (hi / lo) pow(ramp(dur));
 -- the output continuous -- the same trick the original delay-indexed
 -- version used.
 
-fn lfnoise0(freq S, chans Int) S = lfnoise0(freq, chansShape(chans max(1)));
-fn lfnoise0(freq S, sh AsShape) S {
+fn lfnoise0(freq AsSignal, chans Int) S = lfnoise0(freq, chansShape(chans max(1)));
+fn lfnoise0(freq AsSignal, sh AsShape) S {
 	let trig = freq phasor eoc;
 	let y = delayVar() init(1, birand(sh, Rate.init));
 	if_((trig sum) > 0, fn(){ y <- select2(trig, white(sh), y(1)) });
 	y(1)
 }
 
-fn lfnoise1(freq S, chans Int) S = lfnoise1(freq, chansShape(chans max(1)));
-fn lfnoise1(freq S, sh AsShape) S {
+fn lfnoise1(freq AsSignal, chans Int) S = lfnoise1(freq, chansShape(chans max(1)));
+fn lfnoise1(freq AsSignal, sh AsShape) S {
 	let p = freq phasor;
 	let trig = p eoc;
 	let a = delayVar() init(1, birand(sh, Rate.init));  -- segment start
@@ -812,8 +812,8 @@ fn lfnoise1(freq S, sh AsShape) S {
 -- Cubic (Catmull-Rom) noise, one period of latency so the curve has a point
 -- ahead of it. Stands in for SC's LFNoise2 (parabolic) when translating SC
 -- examples, since only the cubic variant is available here.
-fn lfnoise3(freq S, chans Int) S = lfnoise3(freq, chansShape(chans max(1)));
-fn lfnoise3(freq S, sh AsShape) S {
+fn lfnoise3(freq AsSignal, chans Int) S = lfnoise3(freq, chansShape(chans max(1)));
+fn lfnoise3(freq AsSignal, sh AsShape) S {
 	let p = freq phasor;
 	let trig = p eoc;
 	let y0 = delayVar() init(1, birand(sh, Rate.init));  -- newest

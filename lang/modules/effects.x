@@ -100,7 +100,7 @@ fn chorus(x S, rate AsSignal = 0.3, depth AsSignal = 0.5, m AsSignal = 0.5) S {
 
 -- first-order allpass section for the phaser, transposed direct form II
 -- (one state): y = -c*x + s1; s = x + c*y
-fn apStage(x S, c S) S {
+fn apStage(x S, c AsSignal) S {
 	let s = delayVar();
 	let y = s(1) - c * x;
 	s <- x + c * y;

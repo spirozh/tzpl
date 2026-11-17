@@ -187,9 +187,9 @@ fn rhpf(in S, fc AsSignal, rq AsSignal) S = in biquad(fc rhpfCoeffs(rq));
 fn bpf(in S, fc AsSignal, bw AsSignal) S = in biquad(fc bpfCoeffs(bw));
 fn brf(in S, fc AsSignal, bw AsSignal) S = in biquad(fc brfCoeffs(bw));
 fn apf(in S, fc AsSignal, rq AsSignal) S = in biquad(fc apfCoeffs(rq));
-fn lowShelf(in S, fc AsSignal, db S, rq AsSignal) S = in biquad(fc lowShelfCoeffs(db, rq));
-fn highShelf(in S, fc AsSignal, db S, rq AsSignal) S = in biquad(fc highShelfCoeffs(db, rq));
-fn peakEQ(in S, fc AsSignal, db S, bw AsSignal) S = in biquad(fc peakEQCoeffs(db, bw));
+fn lowShelf(in S, fc AsSignal, db AsSignal, rq AsSignal) S = in biquad(fc lowShelfCoeffs(db, rq));
+fn highShelf(in S, fc AsSignal, db AsSignal, rq AsSignal) S = in biquad(fc highShelfCoeffs(db, rq));
+fn peakEQ(in S, fc AsSignal, db AsSignal, bw AsSignal) S = in biquad(fc peakEQCoeffs(db, bw));
 
 
 -- 24 dB/8ve filters

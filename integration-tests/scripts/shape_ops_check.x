@@ -279,9 +279,9 @@ add("velvet_dims", fn() S { inRange(velvet(1000.0, [2, 3]), 0.0, 1.0) * one() },
 add("dust_dims", fn() S { inRange(dust(1000.0, [2, 3]), 0.0, 1.0) * one() }, ones23);
 add("dust2_dims", fn() S { inRange(dust2(1000.0, [2, 3]), -1.0, 1.0) * one() }, ones23);
 add("dustep_dims", fn() S { inRange(dustep(1000.0, [2, 3]), -1.0, 1.0) * one() }, ones23);
-add("lfnoise0_dims", fn() S { inRange((50.0 asSignal) lfnoise0([2, 3]), -1.0, 1.0) * one() }, ones23);
-add("lfnoise1_dims", fn() S { inRange((50.0 asSignal) lfnoise1([2, 3]), -1.0, 1.0) * one() }, ones23);
-add("lfnoise3_dims", fn() S { inRange((50.0 asSignal) lfnoise3([2, 3]), -2.0, 2.0) * one() }, ones23);
+add("lfnoise0_dims", fn() S { inRange(50.0 lfnoise0([2, 3]), -1.0, 1.0) * one() }, ones23);
+add("lfnoise1_dims", fn() S { inRange(50.0 lfnoise1([2, 3]), -1.0, 1.0) * one() }, ones23);
+add("lfnoise3_dims", fn() S { inRange(50.0 lfnoise3([2, 3]), -2.0, 2.0) * one() }, ones23);
 add("transpose_r2", fn() S { live(x34, d34) transpose }, refPermute(x34, d34, [1, 0]));
 add("transpose_r3", fn() S { live(x234, d234) transpose }, refPermute(x234, d234, [2, 1, 0]));
 add("permute_r3", fn() S { live(x234, d234) transpose([1, 2, 0]) }, refPermute(x234, d234, [1, 2, 0]));
