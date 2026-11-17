@@ -1608,6 +1608,59 @@ static void ffi_tapExists(ts::VM& vm, u16 dst, u16, u16 argBase) {
     vm.reg(dst).i = (e && engine::tapExists(e, tapID)) ? 1 : 0;
 }
 
+// Engine performance monitor. NRT-safe reads (takes nrt_lock_), so call from
+// the script side only. The counters are restarted by engineStatsReset.
+static void ffi_engineStatsReset(ts::VM& vm, u16 dst, u16, u16) {
+    engine::Engine* e = getEngine(vm);
+    if (e) engine::resetEngineStats(e);
+    vm.reg(dst).i = e ? 1 : 0;
+}
+
+// fn engineLoadPercent() Float
+static void ffi_engineLoadPercent(ts::VM& vm, u16 dst, u16, u16) {
+    engine::Engine* e = getEngine(vm);
+    if (!e) { vm.reg(dst).f = 0.0; return; }
+    engine::EngineStats st{};
+    engine::getEngineStats(e, st);
+    vm.reg(dst).f = static_cast<engine::f32>(st.loadPercent);
+}
+
+// fn engineBlockMaxMs() Float
+static void ffi_engineBlockMaxMs(ts::VM& vm, u16 dst, u16, u16) {
+    engine::Engine* e = getEngine(vm);
+    if (!e) { vm.reg(dst).f = 0.0; return; }
+    engine::EngineStats st{};
+    engine::getEngineStats(e, st);
+    vm.reg(dst).f = static_cast<engine::f32>(st.blockMaxMs);
+}
+
+// fn engineOverBudget() Int
+static void ffi_engineOverBudget(ts::VM& vm, u16 dst, u16, u16) {
+    engine::Engine* e = getEngine(vm);
+    if (!e) { vm.reg(dst).i = 0; return; }
+    engine::EngineStats st{};
+    engine::getEngineStats(e, st);
+    vm.reg(dst).i = static_cast<engine::i64>(st.overBudgetCount);
+}
+
+// fn engineDropouts() Int
+static void ffi_engineDropouts(ts::VM& vm, u16 dst, u16, u16) {
+    engine::Engine* e = getEngine(vm);
+    if (!e) { vm.reg(dst).i = 0; return; }
+    engine::EngineStats st{};
+    engine::getEngineStats(e, st);
+    vm.reg(dst).i = static_cast<engine::i64>(st.engineDropouts);
+}
+
+// fn engineDeviceXruns() Int
+static void ffi_engineDeviceXruns(ts::VM& vm, u16 dst, u16, u16) {
+    engine::Engine* e = getEngine(vm);
+    if (!e) { vm.reg(dst).i = 0; return; }
+    engine::EngineStats st{};
+    engine::getEngineStats(e, st);
+    vm.reg(dst).i = static_cast<engine::i64>(st.deviceXruns);
+}
+
 // fn tapPeak(tapID Int) Float
 static void ffi_tapPeak(ts::VM& vm, u16 dst, u16, u16 argBase) {
     auto tapID = static_cast<engine::i64>(vm.reg(argBase).i);
@@ -2019,6 +2072,14 @@ void registerAudioEngineFFI(ts::Compiler& compiler) {
     reg("tapChans",         Int,   {Int},                 ffi_tapChans,    true);
     reg("tapShape",         IntArray, {Int},              ffi_tapShape);
     reg("tapSamples",       FloatArray, {Int, Int},       ffi_tapSamples,  true);
+
+    // Engine performance monitor
+    reg("engineStatsReset",  Int,   {}, ffi_engineStatsReset,  true);
+    reg("engineLoadPercent", Float, {}, ffi_engineLoadPercent, true);
+    reg("engineBlockMaxMs",  Float, {}, ffi_engineBlockMaxMs,  true);
+    reg("engineOverBudget",  Int,   {}, ffi_engineOverBudget,  true);
+    reg("engineDropouts",    Int,   {}, ffi_engineDropouts,    true);
+    reg("engineDeviceXruns", Int,   {}, ffi_engineDeviceXruns, true);
 
     reg("resizeBuffer",     Int, {Int, Int, Int, Int},    ffi_resizeBuffer, true);
     reg("loadBuffer",       Int, {Int, Int, String},      ffi_loadBuffer);
