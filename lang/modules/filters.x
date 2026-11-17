@@ -18,7 +18,9 @@ let kLog001 = 0.001 log;
 -- Internal helpers
 -- ============================================================
 
--- angular frequency: w0 = 2*pi*fc/fs
+-- angular frequency: w0 = 2*pi*fc/fs. The cookbook designs are defined for
+-- 0 < fc < fs/2; the endpoints and anything outside them are the caller's
+-- business (see _alphaBW for the one place the library keeps the math finite).
 fn _w0(fc AsSignal) S = twopi * fc * T();
 
 -- alpha from rq (= 1/Q): alpha = sin(w0) / (2*Q) = sin(w0) * rq / 2
@@ -26,7 +28,16 @@ fn _alphaRQ(sw0, rq) = sw0 * rq * 0.5;
 
 -- alpha from bandwidth in octaves:
 -- alpha = sin(w0) * sinh(ln(2)/2 * bw * w0 / sin(w0))
-fn _alphaBW(w0, sw0, bw) = sw0 * (kLog2o2 * bw * w0 / sw0) sinh;
+-- Two numerical singularities live here, and only these are handled: the
+-- quotient w0/sin(w0) is 0/0 at 0 Hz (its finite limit is 1; with the
+-- denominator floored, alpha is 0 there and the band closes), and sinh
+-- overflows f32 at |x| ~ 88, which turned a huge bw into inf/NaN
+-- coefficients; one NaN coefficient poisons the biquad's state for good, so
+-- the filter stayed silent even after the parameter came back into range.
+-- The designs are defined for 0 < fc < fs/2, rq/bw >= 0 and finite db; the
+-- rest of that domain is the caller's business and is not policed here.
+fn _alphaBW(w0, sw0, bw) =
+    sw0 * (min(max(kLog2o2 * bw * (w0 / max(sw0, 1e-20)), -88.0), 88.0)) sinh;
 
 -- normalize all coefficients by a0
 fn _normCoeffs(b0, b1, b2, a0, a1, a2) BiquadCoeffs {

@@ -117,6 +117,7 @@ jobs:
           tests="run_synthc_dump_test.sh run_live_plan_test.sh
                  run_fx_compile_test.sh run_fill_buffer_test.sh
                  run_bitops_d0_test.sh run_osc_test.sh run_pink_test.sh
+                 run_filter_singularities_test.sh
                  run_neg_abs_rewrite_test.sh run_widen_test.sh
                  run_forms_equivalence_test.sh run_shape_ops_test.sh run_idle_voices_test.sh
                  run_live_test.sh"
@@ -181,6 +182,7 @@ jobs:
           tests="run_synthc_dump_test.sh run_live_plan_test.sh
                  run_fx_compile_test.sh run_fill_buffer_test.sh
                  run_bitops_d0_test.sh run_osc_test.sh run_pink_test.sh
+                 run_filter_singularities_test.sh
                  run_neg_abs_rewrite_test.sh run_widen_test.sh
                  run_forms_equivalence_test.sh run_shape_ops_test.sh run_idle_voices_test.sh
                  run_live_test.sh"

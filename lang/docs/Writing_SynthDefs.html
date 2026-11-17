@@ -2219,6 +2219,21 @@ fillBuffer(<span class="hl-num">100</span>, <span class="hl-num">0</span>, <span
             inputs, so filters driven by controls recompute coefficients only when a control
             changes (and every sample while one ramps or is patched to a moving signal).</p>
 
+            <p>The designs are defined for <code>0 &lt; fc &lt; fs()/2</code> and
+            <code>rq</code>, <code>bw</code> &ge; 0. The library does not clamp the parameters
+            into that range, but it does keep the two singularities of the bandwidth formulas
+            finite: the <code>0/0</code> in <code>w0&nbsp;/&nbsp;sin(w0)</code> at 0&nbsp;Hz
+            (alpha becomes 0 there, so the band closes) and the f32 overflow of
+            <code>sinh</code> for a huge <code>bw</code>. One NaN coefficient would poison a
+            biquad's state for good &mdash; the filter would stay silent even after the
+            parameter came back into range &mdash; so those two are taken out of the math
+            rather than left to chance. A center of exactly 0&nbsp;Hz closes the band, but the
+            design has an undamped pole there: a filter that was sounding when its center
+            reached 0 keeps a DC offset until the center moves again (a limit, not a
+            singularity; <code>filterLimits</code> in the limits layer keeps the center off it). Outside the defined range the response is undefined and
+            left to the caller: a center past Nyquist, a negative <code>rq</code> or
+            <code>bw</code>, or an extreme <code>db</code> can make a filter grow or overflow.</p>
+
             <h3>Filter unit generators (12 dB/8ve)</h3>
             <table>
                 <tr><th>Function</th><th>Description</th></tr>
