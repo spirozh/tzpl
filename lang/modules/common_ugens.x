@@ -723,7 +723,7 @@ fn rpanfun(x AsSignal) {
 fn panfuns(x AsSignal) = [x, 1 - x] panfun;
 
 fn pan(x S, pos S) [S] = x * pos uni panfuns;
-fn pan(x S, pos AsConstantSignal) [S] = x * pos uni panfuns;
+fn pan(x S, pos AsConstantSignal) [S] = x * (pos asSignal uni) panfuns;
 
 -- signal movement
 fn rising(x S)   S = x > x z1;
